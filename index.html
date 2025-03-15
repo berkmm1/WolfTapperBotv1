@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolf Tapper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: "Archivo Black", sans-serif;
+            text-align: center;
+            background-color: #000000;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            position: relative;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #fff;
+            border-top: 5px solid #00ff00;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #tabs {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            background-color: #333;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 20;
+        }
+        .tab-button {
+            font-family: "Archivo Black", sans-serif;
+            padding: 10px;
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .tab-button:hover {
+            color: #00ff00;
+        }
+        .tab-content {
+            display: none;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-bottom: 60px; /* Menü sekmesi için yer aç */
+        }
+        #tap-tab, #referrals-tab, #leaderboard-tab, #tasks-tab {
+            display: none;
+        }
+        #tap-tab.active, #referrals-tab.active, #leaderboard-tab.active, #tasks-tab.active {
+            display: block;
+        }
+        #coinContainer {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 5;
+        }
+        #coin {
+            width: 200px;
+            height: 200px;
+            cursor: pointer;
+            animation: notcoinPulse 2s infinite;
+        }
+        @keyframes notcoinPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        #scoreboard {
+            margin-top: 20px;
+            text-align: center;
+            z-index: 10;
+            font-size: 20px;
+        }
+        #score, #energy {
+            margin: 10px 0;
+        }
+        #rocket {
+            display: none;
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            animation: rocketFly 2s infinite;
+            z-index: 15;
+        }
+        @keyframes rocketFly {
+            0% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-20px); }
+            100% { transform: translateX(-50%) translateY(0); }
+        }
+        .button-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 10px 20px;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+        .invite-button {
+            padding: 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .invite-button img {
+            width: 90px;
+            height: auto;
+            display: block;
+        }
+        #tasks, #referral-info {
+            width: 100%;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+        #tasks h3, #referral-info h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        #tasks p, #referral-info p {
+            font-size: 14px;
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+        #tasks .category-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        #tasks .category-tab {
+            padding: 8px 16px;
+            background-color: #222;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        #tasks .category-tab.active {
+            background-color: #444;
+        }
+        #tasks .task-list {
+            list-style: none;
+            padding: 0;
+        }
+        #tasks .task-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #222;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        #tasks .task-item .task-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #tasks .task-item .task-info span {
+            font-size: 16px;
+        }
+        #tasks .task-item .task-reward {
+            font-size: 14px;
+            color: #00ff00;
+        }
+        #tasks .task-item .go-button {
+            padding: 8px 16px;
+            background-color: #333;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+        }
+        #referral-info .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        #referral-info .stat-box {
+            background-color: #222;
+            padding: 10px;
+            border-radius: 10px;
+            width: 40%;
+            text-align: center;
+        }
+        #referral-info .stat-box h4 {
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+        #referral-info .stat-box p {
+            font-size: 18px;
+            margin: 0;
+            color: #fff;
+        }
+        #referral-info .referral-link {
+            display: flex;
+            align-items: center;
+            background-color: #222;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        #referral-info .referral-link input {
+            flex-grow: 1;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 14px;
+            padding: 5px;
+        }
+        #referral-info .referral-link button {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+        }
+        #referral-info .share-button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #fff;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        #referral-info .faq {
+            text-align: left;
+        }
+        #referral-info .faq p {
+            font-size: 14px;
+            color: #ccc;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        #energyWait {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingScreen">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <div id="tabs">
+        <button class="tab-button" onclick="openTab('tap-tab')">Tap</button>
+        <button class="tab-button" onclick="openTab('referrals-tab')">Referrals</button>
+        <button class="tab-button" onclick="openTab('leaderboard-tab')">Leaderboard</button>
+        <button class="tab-button" onclick="openTab('tasks-tab')">Tasks</button>
+    </div>
+
+    <div id="tap-tab" class="tab-content active">
+        <div id="coinContainer">
+            <img id="coin" src="https://i.imgur.com/kVw1MLd.png" alt="Wolf Head">
+            <div id="rocket">🚀</div>
+            <div id="scoreboard">
+                <p id="score">Score: 0</p>
+                <p id="energy">Energy: 100/100</p>
+            </div>
+        </div>
+        <div class="button-container">
+            <button class="invite-button" onclick="inviteFriends()">
+                <img src="https://cdn-icons-png.flaticon.com/512/194/194271.png" alt="Invite Friends Logo">
+            </button>
+        </div>
+        <div id="energyWait">
+            <p>Energy depleted! Wait 6 hours to recharge.</p>
+            <p id="waitTime"></p>
+        </div>
+    </div>
+
+    <div id="referrals-tab" class="tab-content">
+        <div id="referral-info">
+            <h3>Referrals</h3>
+            <p>Earn 500 Wolf per friend + extra rewards for their progress!</p>
+            <div class="stats">
+                <div class="stat-box">
+                    <h4>Total Referrals</h4>
+                    <p id="referralCount">0</p>
+                </div>
+                <div class="stat-box">
+                    <h4>Total Wolf Earned</h4>
+                    <p id="referralWolf">0</p>
+                </div>
+            </div>
+            <div class="referral-link">
+                <input id="referralLink" readonly value="https://t.me/WolfTapperBot?start=guest">
+                <button onclick="copyReferralLink()">📋</button>
+            </div>
+            <button class="share-button" onclick="inviteFriends()">Share Referral Link</button>
+            <div class="faq">
+                <p>How does the referral program work?</p>
+                <p>How many friends can I refer?</p>
+                <p>When do I receive my referral rewards?</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="leaderboard-tab" class="tab-content">
+        <div id="leaderboard">
+            <h3>Leaderboard</h3>
+            <ul id="leaderboardList"></ul>
+        </div>
+    </div>
+
+    <div id="tasks-tab" class="tab-content">
+        <div id="tasks">
+            <h3>ALL Tasks</h3>
+            <p>Small tasks, big rewards! Earn Wolf and level up your game.</p>
+            <div class="category-tabs">
+                <button class="category-tab active">Daily</button>
+            </div>
+            <ul class="task-list">
+                <li class="task-item">
+                    <div class="task-info">
+                        <span>👆</span>
+                        <span>Reach 100 taps!</span>
+                    </div>
+                    <div class="task-reward">+500 Wolf</div>
+                    <button class="go-button" onclick="openTab('tap-tab')">Go</button>
+                </li>
+                <li class="task-item">
+                    <div class="task-info">
+                        <span>🎯</span>
+                        <span>Reach 5000 score!</span>
+                    </div>
+                    <div class="task-reward">+1000 Wolf</div>
+                    <button class="go-button" onclick="openTab('tap-tab')">Go</button>
+                </li>
+                <li class="task-item">
+                    <div class="task-info">
+                        <span>📩</span>
+                        <span>Invite 5 friends!</span>
+                    </div>
+                    <div class="task-reward">+1000 Wolf</div>
+                    <button class="go-button" onclick="openTab('referrals-tab')">Go</button>
+                </li>
+                <li class="task-item">
+                    <div class="task-info">
+                        <span>📩</span>
+                        <span>Invite 10 friends!</span>
+                    </div>
+                    <div class="task-reward">+10000 Wolf</div>
+                    <button class="go-button" onclick="openTab('referrals-tab')">Go</button>
+                </li>
+                <li class="task-item">
+                    <div class="task-info">
+                        <span>📩</span>
+                        <span>Invite 100 friends!</span>
+                    </div>
+                    <div class="task-reward">+100000 Wolf</div>
+                    <button class="go-button" onclick="openTab('referrals-tab')">Go</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        const botToken = "7930121420:AAHUu05TTOBAxLF_Uei6IvoP-mHE_ENqDKo"; // Bot API anahtarı
+        let score = 0;
+        let energy = 100;
+        let maxEnergy = 100;
+        let clickPower = 1; // Boost kaldırıldığı için sabit 1
+        let rocketActive = false;
+        let clickCount = 0;
+        let referralCount = 0;
+        let referralWolf = 0; // Referanslardan kazanılan toplam Wolf
+        let energyWaitTimeout = null;
+
+        const tapTab = document.getElementById("tap-tab");
+        const scoreDisplay = document.getElementById("score");
+        const energyDisplay = document.getElementById("energy");
+        const rocket = document.getElementById("rocket");
+        const referralCountDisplay = document.getElementById("referralCount");
+        const referralWolfDisplay = document.getElementById("referralWolf");
+        const referralLinkInput = document.getElementById("referralLink");
+        const energyWait = document.getElementById("energyWait");
+        const waitTimeDisplay = document.getElementById("waitTime");
+        const leaderboardList = document.getElementById("leaderboardList");
+        const loadingScreen = document.getElementById("loadingScreen");
+
+        // Telegram Web App başlatma
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+        } else {
+            console.error("Telegram Web App yüklenemedi!");
+            alert("Telegram Web App yüklenemedi. Lütfen Telegram üzerinden uygulamayı açın.");
+        }
+
+        const user = window.Telegram.WebApp.initDataUnsafe.user;
+
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Ekranın herhangi bir yerine tıklayınca puan artacak
+        tapTab.addEventListener("click", () => {
+            if (energy > 0) {
+                score += clickPower;
+                energy--;
+                clickCount++;
+                updateDisplay();
+                checkTasks();
+
+                if (clickCount >= 100) {
+                    score += 500;
+                    window.Telegram.WebApp.showAlert("Congratulations! Reached 100 taps, 500 Wolf earned!");
+                    clickCount = 0;
+                }
+
+                if (score % 50 === 0 && !rocketActive) {
+                    activateRocket();
+                }
+            } else if (!energyWaitTimeout) {
+                startEnergyWait();
+            }
+        });
+
+        function startEnergyWait() {
+            energyWait.style.display = "block";
+            tapTab.style.pointerEvents = "none";
+            let timeLeft = 21600000; // 6 hours in ms (Test için 10 saniyeye düşürülebilir: 10000)
+            energyWaitTimeout = setInterval(() => {
+                timeLeft -= 1000;
+                const hours = Math.floor(timeLeft / 3600000);
+                const minutes = Math.floor((timeLeft % 3600000) / 60000);
+                const seconds = Math.floor((timeLeft % 60000) / 1000);
+                waitTimeDisplay.textContent = `${hours}h ${minutes}m ${seconds}s`;
+                if (timeLeft <= 0) {
+                    clearInterval(energyWaitTimeout);
+                    energyWait.style.display = "none";
+                    energy = maxEnergy;
+                    tapTab.style.pointerEvents = "auto";
+                    energyWaitTimeout = null;
+                    updateDisplay();
+                }
+            }, 1000);
+        }
+
+        setInterval(() => {
+            if (energy < maxEnergy && !energyWaitTimeout) {
+                energy++;
+                updateDisplay();
+                if (energy > 0) tapTab.style.pointerEvents = "auto";
+            }
+        }, 1000);
+
+        function activateRocket() {
+            rocketActive = true;
+            rocket.style.display = "block";
+            clickPower = 5;
+            setTimeout(() => {
+                rocketActive = false;
+                rocket.style.display = "none";
+                clickPower = 1; // Boost kaldırıldığı için sabit 1
+            }, 10000);
+        }
+
+        function inviteFriends() {
+            const inviteLink = `https://t.me/WolfTapperBot?start=${user ? user.id : 'guest'}`;
+            referralLinkInput.value = inviteLink;
+            window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=Join%20Wolf%20Tapper!%20My%20score:%20${score}`);
+            // Simülasyon için: Her davet denemesinde referralCount artar (gerçek uygulamada backend kontrolü gerekir)
+            referralCount++;
+            score += 500; // Her davet için 500 Wolf
+            referralWolf += 500;
+            updateDisplay();
+            checkTasks();
+        }
+
+        function copyReferralLink() {
+            const inviteLink = referralLinkInput.value;
+            navigator.clipboard.writeText(inviteLink);
+            window.Telegram.WebApp.showAlert("Referral link copied to clipboard!");
+        }
+
+        function checkTasks() {
+            // Görev 1: 100 tap
+            if (clickCount >= 100 && !localStorage.getItem(`task1Completed_${user ? user.id : 'guest'}`)) {
+                score += 500;
+                window.Telegram.WebApp.showAlert("Task 1 completed! +500 Wolf");
+                clickCount = 0;
+                localStorage.setItem(`task1Completed_${user ? user.id : 'guest'}`, "true");
+            }
+            // Görev 2: 5000 skor
+            if (score >= 5000 && !localStorage.getItem(`task2Completed_${user ? user.id : 'guest'}`)) {
+                score += 1000;
+                window.Telegram.WebApp.showAlert("Task 2 completed! +1000 Wolf");
+                score = 0; // Reset for demo, adjust as needed
+                localStorage.setItem(`task2Completed_${user ? user.id : 'guest'}`, "true");
+            }
+            // Görev 3: 5 arkadaş davet
+            if (referralCount >= 5 && !localStorage.getItem(`task3Completed_${user ? user.id : 'guest'}`)) {
+                score += 1000;
+                referralWolf += 1000;
+                window.Telegram.WebApp.showAlert("Task 3 completed! +1000 Wolf");
+                localStorage.setItem(`task3Completed_${user ? user.id : 'guest'}`, "true");
+            }
+            // Görev 4: 10 arkadaş davet
+            if (referralCount >= 10 && !localStorage.getItem(`task4Completed_${user ? user.id : 'guest'}`)) {
+                score += 10000;
+                referralWolf += 10000;
+                window.Telegram.WebApp.showAlert("Task 4 completed! +10000 Wolf");
+                localStorage.setItem(`task4Completed_${user ? user.id : 'guest'}`, "true");
+            }
+            // Görev 5: 100 arkadaş davet
+            if (referralCount >= 100 && !localStorage.getItem(`task5Completed_${user ? user.id : 'guest'}`)) {
+                score += 100000;
+                referralWolf += 100000;
+                window.Telegram.WebApp.showAlert("Task 5 completed! +100000 Wolf");
+                localStorage.setItem(`task5Completed_${user ? user.id : 'guest'}`, "true");
+            }
+            updateDisplay();
+        }
+
+        function updateLeaderboard() {
+            const leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+            leaderboard.push({ userId: user ? user.id : "guest", score });
+            leaderboard.sort((a, b) => b.score - a.score).splice(10); // Top 10
+            localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+            leaderboardList.innerHTML = leaderboard.map((entry, index) => `<li>${index + 1}. ${entry.userId}: ${entry.score}</li>`).join("");
+        }
+
+        function updateDisplay() {
+            scoreDisplay.textContent = `Score: ${score}`;
+            energyDisplay.textContent = `Energy: ${energy}/${maxEnergy}`;
+            referralCountDisplay.textContent = referralCount;
+            referralWolfDisplay.textContent = referralWolf;
+            referralLinkInput.value = `https://t.me/WolfTapperBot?start=${user ? user.id : 'guest'}`;
+            localStorage.setItem(`score_${user ? user.id : 'guest'}`, score);
+            localStorage.setItem(`energy_${user ? user.id : 'guest'}`, energy);
+            localStorage.setItem(`clickCount_${user ? user.id : 'guest'}`, clickCount);
+            localStorage.setItem(`maxEnergy_${user ? user.id : 'guest'}`, maxEnergy);
+            localStorage.setItem(`referralCount_${user ? user.id : 'guest'}`, referralCount);
+            localStorage.setItem(`referralWolf_${user ? user.id : 'guest'}`, referralWolf);
+            updateLeaderboard();
+        }
+
+        window.onload = () => {
+            const userId = user ? user.id : 'guest';
+            score = parseInt(localStorage.getItem(`score_${userId}`)) || 0;
+            energy = parseInt(localStorage.getItem(`energy_${userId}`)) || 100;
+            clickCount = parseInt(localStorage.getItem(`clickCount_${userId}`)) || 0;
+            maxEnergy = parseInt(localStorage.getItem(`maxEnergy_${userId}`)) || 100;
+            referralCount = parseInt(localStorage.getItem(`referralCount_${userId}`)) || 0;
+            referralWolf = parseInt(localStorage.getItem(`referralWolf_${userId}`)) || 0;
+            clickPower = 1; // Boost kaldırıldığı için sabit 1
+            updateDisplay();
+            if (energy <= 0) startEnergyWait();
+            loadingScreen.style.display = "none"; // Loading ekranını gizle
+        };
+    </script>
+</body>
+</html>
